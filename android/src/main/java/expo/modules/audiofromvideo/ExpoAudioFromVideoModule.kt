@@ -2,6 +2,10 @@ package expo.modules.audiofromvideo
 
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import android.content.Context
+import com.arthenica.mobileffmpeg.FFmpeg
+import java.io.File
+import java.util.UUID
 
 class ExpoAudioFromVideoModule : Module() {
   // Each module class must implement the definition function. The definition consists of components
@@ -13,35 +17,20 @@ class ExpoAudioFromVideoModule : Module() {
     // The module will be accessible from `requireNativeModule('ExpoAudioFromVideo')` in JavaScript.
     Name("ExpoAudioFromVideo")
 
-    // Sets constant properties on the module. Can take a dictionary or a closure that returns a dictionary.
-    Constants(
-      "PI" to Math.PI
-    )
+    AsyncFunction("extractAudioFromVideo") { videoUri: String ->
+      // Generate a random UUID for the output file
+      val outputFileName = "${UUID.randomUUID()}.mp3"
 
-    // Defines event names that the module can send to JavaScript.
-    Events("onChange")
+      // Get the cache directory and prepare the output file path
+      val cacheDir = appContext.cacheDirectory
+      val outputPath = File(cacheDir, outputFileName).absolutePath
 
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      "Hello world! 👋"
-    }
+      // FFmpeg command to extract audio
+      val command = arrayOf("-i", videoUri, "-q:a", "0", "-map", "a", outputPath)
 
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { value: String ->
-      // Send an event to JavaScript.
-      sendEvent("onChange", mapOf(
-        "value" to value
-      ))
-    }
-
-    // Enables the module to be used as a native view. Definition components that are accepted as part of
-    // the view definition: Prop, Events.
-    View(ExpoAudioFromVideoView::class) {
-      // Defines a setter for the `name` prop.
-      Prop("name") { view: ExpoAudioFromVideoView, prop: String ->
-        println(prop)
-      }
+      // Execute the FFmpeg command
+      FFmpeg.execute(command)
+      outputPath
     }
   }
 }
